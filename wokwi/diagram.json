@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "author": "GitHub Copilot",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp32",
+      "top": 0,
+      "left": 0,
+      "attrs": { "rotate": "0" }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -100,
+      "left": 200,
+      "attrs": { "temperature": "25.0", "humidity": "55.0" }
+    },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": 52, "left": 203.82, "attrs": {} },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot",
+      "top": 190.7,
+      "left": 278.2,
+      "attrs": { "value": "50" }
+    }
+  ],
+  "connections": [
+    [ "esp32:GND", "dht:GND", "black", [] ],
+    [ "esp32:3V3", "dht:VCC", "red", [] ],
+    [ "esp32:13", "dht:SDA", "green", [] ],
+    [ "esp32:3V3", "pir:VCC", "red", [] ],
+    [ "esp32:GND", "pir:GND", "black", [] ],
+    [ "esp32:27", "pir:OUT", "yellow", [] ],
+    [ "esp32:3V3", "pot:VCC", "red", [] ],
+    [ "esp32:GND", "pot:GND", "black", [] ],
+    [ "esp32:34", "pot:SIG", "blue", [] ]
+  ],
+  "dependencies": {}
+}
