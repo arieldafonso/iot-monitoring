@@ -103,7 +103,6 @@ pip install -r requirements.txt
 No PowerShell, dentro da pasta do projeto:
 
 ```powershell
-cd C:\Users\LENOVO\Projectos\iot-monitoring
 docker compose up -d --build
 ```
 
