@@ -88,7 +88,6 @@ https://www.python.org/downloads/windows/
 ## Criar ambiente virtual (opcional mas recomendado)
 
 ```powershell
-cd C:\Users\LENOVO\Projectos\iot-monitoring
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
