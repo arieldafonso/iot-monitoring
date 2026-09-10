@@ -22,6 +22,14 @@ class RabbitMQAlertPublisher(AlertPublisher):
         self._connection: Optional[pika.BlockingConnection] = None
         self._channel: Optional[pika.channel.Channel] = None
 
+    def _is_connected(self) -> bool:
+        return (
+            self._connection is not None
+            and self._connection.is_open
+            and self._channel is not None
+            and self._channel.is_open
+        )
+
     def connect(self) -> None:
         try:
             parameters = pika.URLParameters(self._url)
@@ -33,9 +41,13 @@ class RabbitMQAlertPublisher(AlertPublisher):
             logger.exception("RabbitMQ connection failed: %s", exc)
             raise
 
-    def publish(self, event: AlertEvent) -> None:
-        if self._connection is None or self._channel is None:
+    def _ensure_connected(self) -> None:
+        if not self._is_connected():
+            logger.info("RabbitMQ not connected, reconnecting...")
             self.connect()
+
+    def publish(self, event: AlertEvent) -> None:
+        self._ensure_connected()
 
         payload = json.dumps(event.to_dict(), separators=(",", ":"))
         self._channel.basic_publish(
