@@ -6,7 +6,7 @@ services:
       - "0.0.0.0:1883:1883"
       - "0.0.0.0:9001:9001"
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./infrastructure/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     restart: unless-stopped
@@ -23,11 +23,11 @@ services:
     ports:
       - "8086:8086"
     environment:
-      INFLUXDB_DB: harryspace
-      INFLUXDB_USER: user
-      INFLUXDB_USER_PASSWORD: password
-      INFLUXDB_ADMIN_USER: admin
-      INFLUXDB_ADMIN_PASSWORD: admin
+      INFLUXDB_DB: ${INFLUX_DB:-harryspace}
+      INFLUXDB_USER: ${INFLUX_USER:-user}
+      INFLUXDB_USER_PASSWORD: ${INFLUX_PASSWORD:-password}
+      INFLUXDB_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      INFLUXDB_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
     volumes:
       - influxdb_data:/var/lib/influxdb
     restart: unless-stopped
@@ -47,12 +47,19 @@ services:
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: "${SMTP_HOST:-smtp.zoho.com}:${SMTP_PORT:-465}"
+      GF_SMTP_USER: "${SMTP_USER}"
+      GF_SMTP_PASSWORD: "${SMTP_PASS}"
+      GF_SMTP_FROM_ADDRESS: "${SMTP_USER}"
+      GF_SMTP_FROM_NAME: "${SMTP_NAME:-Intelize}"
+      GF_SMTP_STARTTLS_POLICY: "NoStartTLS"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
@@ -62,16 +69,23 @@ services:
       start_period: 20s
 
   bridge:
-    build: .
+    build:
+      context: .
+      dockerfile: services/bridge/Dockerfile
     container_name: harryspace-bridge
     environment:
-      MQTT_BROKER: mqtt
-      MQTT_PORT: "1883"
-      INFLUX_HOST: influxdb
-      INFLUX_PORT: "8086"
-      INFLUX_DB: harryspace
-      INFLUX_USER: user
-      INFLUX_PASSWORD: password
+      MQTT_BROKER: ${MQTT_BROKER:-mqtt}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      MQTT_TOPIC_PATTERN: ${MQTT_TOPIC_PATTERN:-harryspace/+/+}
+      INFLUX_HOST: ${INFLUX_HOST:-influxdb}
+      INFLUX_PORT: ${INFLUX_PORT:-8086}
+      INFLUX_DB: ${INFLUX_DB:-harryspace}
+      INFLUX_USER: ${INFLUX_USER:-user}
+      INFLUX_PASSWORD: ${INFLUX_PASSWORD:-password}
+      LOCATION: ${LOCATION:-01}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mqtt:
         condition: service_healthy
@@ -82,21 +96,58 @@ services:
   ping-monitor:
     build:
       context: .
-      dockerfile: Dockerfile.ping
+      dockerfile: services/ping_monitor/Dockerfile
     container_name: harryspace-ping
     environment:
-      MQTT_BROKER: mqtt
-      MQTT_PORT: "1883"
-      SWITCH_IP: "192.168.1.1"
-      LOCATION: "01"
-      PING_INTERVAL: "5"
+      MQTT_BROKER: ${MQTT_BROKER:-mqtt}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_USERNAME: ${MQTT_USERNAME}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      SWITCH_IP: ${SWITCH_IP:-192.168.1.1}
+      LOCATION: ${LOCATION:-01}
+      PING_INTERVAL: ${PING_INTERVAL:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mqtt:
         condition: service_healthy
     restart: unless-stopped
+
+  alert-service:
+    build:
+      context: .
+      dockerfile: services/alert_service/Dockerfile
+    container_name: harryspace-alert-service
+    environment:
+      MQTT_BROKER: mqtt
+      MQTT_PORT: "1883"
+      RABBITMQ_URL: "amqp://rabbitmq:5672"
+      RABBITMQ_QUEUE: "alert-events"
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: harryspace-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   mosquitto_data:
   mosquitto_log:
   influxdb_data:
   grafana_data:
+  rabbitmq_data:

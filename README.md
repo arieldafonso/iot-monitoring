@@ -1,91 +1,156 @@
-# IoT Monitoring Environmental
+# IoT Monitoring System
 
-Este projeto monta uma stack completa de monitoramento ambiental IoT com 5 serviços Docker:
+**Professional environmental monitoring system with real-time telemetry, MQTT integration, time-series storage, and visualization.**
 
-- Wokwi ESP32 (simulação com sensores)
-- MQTT Broker — Eclipse Mosquitto 2
-- Python bridge (MQTT → InfluxDB)
-- InfluxDB 1.8 (base de dados temporal)
-- Grafana 10.4.2 (10 painéis)
-- Ping Monitor (latência de rede a um IP alvo)
+A complete IoT monitoring stack demonstrating:
+- Edge device simulation (ESP32 with DHT22, PIR, Potentiometer sensors)
+- MQTT message broker
+- Python microservices (Bridge, Ping Monitor)
+- Time-series data persistence (InfluxDB)
+- Real-time visualization (Grafana)
 
-Arquitetura em pipeline:
+## Architecture
 
 ```
-Wokwi ESP32 (DHT22 + PIR + Potenciômetro)
-          │
-          ▼ MQTT (harryspace/01/*)
-     Mosquitto :1883 ──────────────────┐
-          │                            │
-          ▼                            ▼
-      bridge.py                 ping_monitor.py
-   (subscreve harryspace/+/+)   (publica harryspace/01/ping)
-          │                            │
-          └──────────────┬─────────────┘
-                         ▼
-                   InfluxDB :8086
-                   (measurement: temperature, humidity, voltage,
-                                 presence, ping, lux)
-                         │
-                         ▼
-                   Grafana :3000
-                   (Dashboard com 10 painéis)
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  ESP32 Wokwi Simulation                                │
+│  ├─ DHT22: Temperature + Humidity                       │
+│  ├─ PIR: Motion Detection                              │
+│  └─ Potentiometer: Analog Voltage                       │
+│                                                         │
+│  MQTT Topics:                                           │
+│  harryspace/01/{temperature,humidity,presence,voltage} │
+│                                                         │
+└──────────────────┬──────────────────────────────────────┘
+                   │ WiFi + MQTT
+                   ▼
+         ┌─────────────────────┐
+         │  Mosquitto Broker   │
+         │   :1883, :9001      │
+         └──────┬──────────────┘
+                │
+    ┌───────────┼───────────┐
+    │           │           │
+    ▼           ▼           ▼
+  Bridge   Ping Monitor  (local dev)
+    │           │
+    └───────────┼───────────┘
+                ▼
+        ┌──────────────────┐
+        │  InfluxDB 1.8    │
+        │  :8086           │
+        │  harryspace DB   │
+        └────────┬─────────┘
+                 │
+                 ▼
+        ┌──────────────────┐
+        │  Grafana 10.4.2  │
+        │  :3000           │
+        │  10 Panels       │
+        └──────────────────┘
 ```
 
-## Estrutura do projeto
+## Technologies
 
-```text
+- **ESP32**: Microcontroller with WiFi (simulated in Wokwi)
+- **MQTT**: Message broker (Eclipse Mosquitto)
+- **Python 3.11**: Services (Bridge, Ping Monitor)
+- **InfluxDB 1.8**: Time-series database
+- **Grafana 10.4.2**: Data visualization
+- **Docker Compose**: Orchestration
+
+## Project Structure
+
+```
 iot-monitoring/
-├── docker-compose.yml              # 5 serviços: mqtt, influxdb, grafana, bridge, ping-monitor
-├── mosquitto.conf                  # Mosquitto: portas 1883 (MQTT) e 9001 (WebSocket)
-├── requirements.txt                # paho-mqtt==1.6.1, influxdb==5.3.1
-├── Dockerfile                      # Imagem para o serviço "bridge"
-├── Dockerfile.ping                 # Imagem para o serviço "ping-monitor"
-├── bridge.py                       # Bridge MQTT → InfluxDB
-├── ping_monitor.py                 # Publica latência de ping no MQTT
-├── publish_test_data.sh            # Script bash: publica valores de teste MQTT
-├── README.md
-├── wokwi/
-│   ├── wokwi.ino                   # Firmware ESP32 (ANTES era referido como sketch.ino)
-│   ├── diagram.json                # Circuito: ESP32 DevKit + DHT22 + PIR + Potenciômetro
-│   ├── wokwi.toml                  # Config Wokwi (aponta para firmware pré-compilado em build/)
-│   └── build/                      # Binários compilados do wokwi.ino (wokwi.ino.bin, etc.)
-├── grafana/
-│   └── provisioning/
-│       ├── datasources/
-│       │   └── influxdb.yml        # DataSource InfluxDB (provisionamento automático)
-│       └── dashboards/
-│           ├── dashboard.yml       # Provider de dashboards
-│           └── environmental-dashboard.json   # Dashboard (10 painéis)
-└── .venv/                          # Ambiente virtual Python (opcional, para bridge.py local)
+│
+├── .env.example                    # Configuration template (no secrets)
+├── .gitignore                      # Git ignore rules
+├── docker-compose.yml              # 5 services: mqtt, influxdb, grafana, bridge, ping-monitor
+├── requirements.txt                # Python dependencies + pytest
+├── pytest.ini                      # Test configuration
+├── README.md                       # This file
+│
+├── infrastructure/                 # Non-code infrastructure configs
+│   ├── mosquitto/
+│   │   └── mosquitto.conf
+│   └── grafana/
+│       └── provisioning/
+│           ├── datasources/
+│           │   └── influxdb.yml
+│           └── dashboards/
+│               ├── dashboard.yml
+│               └── environmental-dashboard.json
+│
+├── services/                       # Microservices
+│   ├── bridge/                     # MQTT → InfluxDB bridge
+│   │   ├── Dockerfile
+│   │   ├── src/
+│   │   │   ├── main.py
+│   │   │   ├── config.py
+│   │   │   ├── models.py
+│   │   │   ├── mqtt_handler.py
+│   │   │   ├── influx_client.py
+│   │   │   ├── telemetry_service.py
+│   │   │   └── logger_config.py
+│   │   └── tests/
+│   │       ├── test_models.py
+│   │       └── test_config.py
+│   │
+│   └── ping_monitor/               # Network latency monitoring
+│       ├── Dockerfile
+│       ├── src/
+│       │   ├── main.py
+│       │   ├── config.py
+│       │   ├── mqtt_client.py
+│       │   ├── ping_service.py
+│       │   └── logger_config.py
+│       └── tests/
+│
+├── wokwi/                          # ESP32 Simulation (Wokwi)
+│   ├── wokwi.ino                   # Firmware source
+│   ├── diagram.json                # Circuit diagram
+│   ├── wokwi.toml                  # Configuration
+│   └── build/                      # Compiled binaries
+│
+├── docs/                           # Documentation
+│   ├── ARCHITECTURE.md             # System design & data flow
+│   ├── MQTT_TOPICS.md              # Message protocol specification
+│   ├── SETUP.md                    # Installation & configuration
+│   └── TROUBLESHOOTING.md          # Common issues & solutions
+│
+├── scripts/                        # Utility scripts
+│   ├── publish_test_data.sh        # MQTT test publisher
+│   └── setup_env.sh                # Environment setup helper
+│
+└── tests/                          # Integration tests (future)
 ```
 
-## Pré-requisitos
+## Prerequisites
 
-- Windows 10/11
-- Docker Desktop instalado e em execução
-- Python 3.8+ instalado (só se quiseres correr bridge.py fora do Docker)
-- Git (opcional)
+- **Docker Desktop** (Windows 10/11, macOS, Linux)
+  - Download: https://www.docker.com/products/docker-desktop
+  - Docker Compose included
+- **Python 3.8+** (optional, for local development)
+- **Git** (optional, for version control)
 
-## Instalar Docker Desktop
+## Quick Start
 
-1. Baixe em: https://www.docker.com/products/docker-desktop
-2. Instale e reinicie o computador
-3. Abra o Docker Desktop
-4. Confirme que o ícone fica em execução (canto inferior direito)
+### 1. Configure Environment
 
-## Instalar Python
+```bash
+# Copy configuration template
+cp .env.example .env
 
-No PowerShell:
-
-```powershell
-python --version
+# Edit .env with your settings (change default passwords!)
 ```
 
-Se não existir, instale Python 3.8+ em:
-https://www.python.org/downloads/windows/
+### 2. Start Services
 
-## Criar ambiente virtual (opcional mas recomendado)
+```bash
+# Start all 5 services
+docker compose up -d
 
 ```powershell
 python -m venv .venv
@@ -119,288 +184,147 @@ Verificar containers em execução:
 docker compose ps
 ```
 
-Logs (individuais ou todos):
+Expected output: all 5 services showing `Up` status.
 
-```powershell
-docker compose logs mosquitto
-docker compose logs influxdb
-docker compose logs grafana
-docker compose logs bridge
-docker compose logs ping-monitor
-docker compose logs -f bridge    # follow (a tempo real)
+### 3. Access Dashboards
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Grafana** | http://localhost:3000 | admin / (from .env) |
+| **InfluxDB API** | http://localhost:8086 | — |
+| **Mosquitto MQTT** | localhost:1883 | — |
+
+### 4. View Logs
+
+```bash
+# Bridge service logs
+docker compose logs bridge --tail 50
+
+# All services (real-time)
+docker compose logs -f
 ```
 
-Parar tudo:
+### 5. Stop Services
 
-```powershell
+```bash
 docker compose down
 ```
 
-## Verificar portas
+## Configuration
 
-| Serviço | Porta | URL / destino |
-|---|---|---|
-| Mosquitto MQTT | 1883 | `0.0.0.0:1883` (qualquer interface) |
-| Mosquitto WebSocket | 9001 | `0.0.0.0:9001` |
-| InfluxDB | 8086 | http://localhost:8086/ping |
-| Grafana | 3000 | http://localhost:3000 |
+### Environment Variables
 
-## Ping Monitor (serviço 5 do docker-compose)
+Create `.env` file from `.env.example`:
 
-O `ping-monitor` faz ping a um IP (ex: switch/router) e publica a latência em `harryspace/[LOCATION]/ping` (em ms). Por defeito:
+```bash
+# MQTT Configuration
+MQTT_BROKER=mqtt              # Broker hostname
+MQTT_PORT=1883
+MQTT_USERNAME=
+MQTT_PASSWORD=
 
-```
-SWITCH_IP=192.168.1.1
+# InfluxDB Configuration
+INFLUX_HOST=influxdb
+INFLUX_PORT=8086
+INFLUX_DB=harryspace
+INFLUX_USER=user
+INFLUX_PASSWORD=password      # ⚠️ CHANGE THIS IN PRODUCTION
+
+# Grafana Configuration
+GF_SECURITY_ADMIN_USER=admin
+GF_SECURITY_ADMIN_PASSWORD=admin   # ⚠️ CHANGE THIS IN PRODUCTION
+
+# Services Configuration
 LOCATION=01
-PING_INTERVAL=5 (segundos)
+LOG_LEVEL=INFO
+SWITCH_IP=192.168.1.1
+PING_INTERVAL=5
 ```
 
-Para alterar (ex: o teu router está em 192.168.1.254), edita as `environment` do serviço `ping-monitor` no [docker-compose.yml](docker-compose.yml) e faz:
+## MQTT Topics
 
-```powershell
-docker compose up -d --build ping-monitor
-```
-
-Valores publicados:
-- Latência (float) em ms, se sucesso
-- `-1`, se o alvo for inalcançável
-
-## Wokwi e comunicação MQTT
-
-### Diferença importante entre "localhost"
-
-- `localhost` **no teu computador** = o próprio Windows
-- `localhost` **dentro da simulação Wokwi** = a própria VM/simulador do Wokwi (na cloud deles), NÃO o teu PC
-- Por isso, Wokwi **não** deve apontar para `localhost` para chegar ao Mosquitto do teu Docker.
-
-### Duas opções válidas para MQTT_HOST no wokwi.ino
-
-No ficheiro [wokwi/wokwi.ino](wokwi/wokwi.ino) linhas 12-18, o firmware usa:
-
-```cpp
-#ifndef MQTT_HOST
-#define MQTT_HOST "host.wokwi.internal"
-#endif
-```
-
-#### Opção A — Wokwi Private IoT Gateway (default no código)
-
-`host.wokwi.internal` é um **hostname especial do Wokwi** que resolve automaticamente para a tua máquina Windows **se estiveres a usar a funcionalidade paga "Wokwi Private IoT Gateway"**.
-
-- Vantagem: não precisas de saber o teu IP LAN nem abrir firewall.
-- Desvantagem: requer subscrição Wokwi paga; **não funciona com Wokwi free/standard**.
-
-#### Opção B — IP da máquina Windows na LAN (Wokwi free/standard)
-
-Usa o **IPv4 da tua interface de rede ativa**. Funciona com Wokwi free, mas precisas de abrir a porta 1883 no firewall.
-
-Como descobrir o IP no Windows:
-
-```powershell
-ipconfig
-```
-
-Procura a interface ativa (Wi-Fi ou Ethernet):
-
-```text
-IPv4 Address . . . . . . . . . : 192.168.1.42
-```
-
-Edita o [wokwi/wokwi.ino](wokwi/wokwi.ino) e usa esse IP:
-
-```cpp
-// Ou define diretamente (substitui o #ifndef acima)
-#define MQTT_HOST "192.168.1.42"
-```
-
-**Firewall do Windows:** se a conexão falhar, liberta a porta 1883:
-- Windows Defender Firewall → Regras de entrada → Nova regra
-- Tipo = Porta → TCP 1883 → Permitir a ligação
-- Ou permite "Docker Desktop Backend" e o processo `mosquitto` nas regras de saída/entrada.
-
-## Wokwi setup (simulação do ESP32)
-
-### Sensores no circuito (conferidos em diagram.json)
-
-| Sensor | Pin no ESP32 | Publica em MQTT | Measurement no InfluxDB |
-|---|---|---|---|
-| **DHT22** (temperatura + humidade) | SDA = GPIO 13 | `harryspace/01/temperature`, `harryspace/01/humidity` | `temperature`, `humidity` |
-| **PIR** (sensor de presença/movimento) | OUT = GPIO 27 | `harryspace/01/presence` (0 = sem movimento, 1 = detetado) | `presence` |
-| **Potenciômetro** (tensão 0–3.3 V) | SIG = GPIO 34 | `harryspace/01/voltage` (0.0–3.3 V) | `voltage` |
-
-> **Nota:** Não existe LDR neste circuito. O painel de "lux" foi removido da dashboard; o bridge.py ainda aceita `lux` por retrocompatibilidade, mas não há sensor a publicá-lo.
-
-### Passos no Wokwi Web
-
-1. Acede https://wokwi.com
-2. Cria um novo projeto ESP32 (ESP32 DevKit C V4)
-3. Adiciona os sensores exatos do diagrama:
-   - 1× **DHT22** (temperatura + humidade)
-   - 1× **PIR Motion Sensor** (presença/movimento)
-   - 1× **Potenciômetro**
-4. Abre o arquivo de diagrama e cola o conteúdo de [wokwi/diagram.json](wokwi/diagram.json)
-5. No separador do sketch, substitui pelo conteúdo de [wokwi/wokwi.ino](wokwi/wokwi.ino)
-6. Ajusta `MQTT_HOST` conforme a secção anterior (Opção A ou B)
-7. Clica em **Start the Simulation** (botão verde)
-
-O firmware publica automaticamente a cada 5 segundos, com logs detalhados na Serial Wokwi a 115200 baud.
-
-## MQTT manual (testes rápidos)
-
-Para testar sem Wokwi, usa um cliente MQTT como **MQTT Explorer** ou os comandos `mosquitto_pub` (disponíveis no container mosquitto).
-
-- Host: `localhost` (ou IP LAN, para clientes externos ao Docker)
-- Port: `1883`
-- Sem autenticação (anonymous = true)
-
-### Publicar mensagens de exemplo
-
-Tópicos e formatos reconhecidos pelo [bridge.py](bridge.py) (linha 18, `VALID_MEASUREMENTS`):
+Current topics published by Wokwi ESP32:
 
 ```
-harryspace/[LOCATION]/temperature   →  float (ex: 24.5, °C)
-harryspace/[LOCATION]/humidity      →  float (ex: 58.0, %)
-harryspace/[LOCATION]/voltage       →  float (ex: 3.28, V)
-harryspace/[LOCATION]/presence      →  0 ou 1 (PIR)
-harryspace/[LOCATION]/ping          →  float (ex: 12.4, ms, ou -1 se unreachable)
-harryspace/[LOCATION]/lux           →  float (sem sensor associado, retrocompatibilidade)
+harryspace/01/temperature   → Temperature (°C)
+harryspace/01/humidity      → Humidity (%)
+harryspace/01/presence      → Motion (0/1)
+harryspace/01/voltage       → Voltage (0-3.3V)
+harryspace/01/ping          → Latency (ms)
 ```
 
-Exemplos (dentro do container mosquitto, ou com mosquitto-clients instalado):
+See `docs/MQTT_TOPICS.md` for detailed specification.
+
+## Running Tests
 
 ```bash
-# Temperatura
-mosquitto_pub -h localhost -p 1883 -t "harryspace/01/temperature" -m "24.5"
-# Humidade
-mosquitto_pub -h localhost -p 1883 -t "harryspace/01/humidity"    -m "58.0"
-# Presença PIR (0 = n detetado, 1 = detetado)
-mosquitto_pub -h localhost -p 1883 -t "harryspace/01/presence"    -m "1"
-# Tensão Potenciômetro (0.0 a 3.3 V)
-mosquitto_pub -h localhost -p 1883 -t "harryspace/01/voltage"     -m "3.28"
-# Ping (ms, ou -1 se unreachable)
-mosquitto_pub -h localhost -p 1883 -t "harryspace/01/ping"        -m "12.4"
+# Install dependencies
+pip install -r requirements.txt
+
+# Run all tests
+pytest
+
+# Run specific test file
+pytest services/bridge/tests/test_models.py -v
+
+# With coverage report
+pytest --cov=services/bridge/src tests/
 ```
 
-Depois confirma nos logs do bridge:
+## Local Development
 
-```powershell
-docker compose logs --tail=20 bridge
-```
+To run services locally without Docker:
 
-Esperado (exemplo):
-```text
-[MQTT] Received: harryspace/01/temperature = 24.5
-[INFLUXDB] Saved: temperature = 24.5 location=01
-```
+### 1. Create Virtual Environment
 
-Também podes correr o script [publish_test_data.sh](publish_test_data.sh) (bash, requer `mosquitto-clients`):
 ```bash
-./publish_test_data.sh
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# or
+.\.venv\Scripts\Activate.ps1  # Windows PowerShell
 ```
 
-## Grafana
+### 2. Install Dependencies
 
-Acede a:
-
-```text
-http://localhost:3000
-```
-
-Login por defeito (podes alterar depois):
-- Usuário: `admin`
-- Senha:   `admin`
-
-### Provisionamento automático
-
-- **DataSource InfluxDB** configurado via [grafana/provisioning/datasources/influxdb.yml](grafana/provisioning/datasources/influxdb.yml)
-  - URL: `http://influxdb:8086` (nome do serviço Docker, resolve internamente)
-  - Database: `harryspace` | user: `user` | password: `password`
-  - `isDefault: true`
-
-- **Dashboard "Monitoramento Ambiental"** carregado via [grafana/provisioning/dashboards/environmental-dashboard.json](grafana/provisioning/dashboards/environmental-dashboard.json)
-  - 10 painéis no total:
-    - **Timeseries (5):** Temperatura (°C), Humidade (%), Presença (PIR, 0/1), Tensão (V), Ping ao Switch (ms)
-    - **Stat (5):** Temperatura Atual, Humidade Atual, Presença Atual, Tensão Atual, Ping Atual
-  - Template variable `location = "01"` (constante, escondida)
-  - Refresh automático a cada 10 s
-  - Janela temporal padrão: últimos 5 minutos (`now-5m` até `now`)
-
-### Resolução de problemas do Grafana
-
-- **Painéis brancos / sem dados:** Confirma primeiro que o bridge está a receber e guardar (ver `docker compose logs bridge`). Depois, dentro do Grafana:
-  1. Abre Connections → Data sources → InfluxDB
-  2. Clica em **Test** (canto inferior direito). Tem de mostrar "Data source is working".
-- **Datasource aparece mas erros nas queries:** Vai ao painel de Admin → Server Admin → Data sources, e garante que o UID do datasource corresponde ao esperado pelo JSON da dashboard.
-- **Dados antigos não aparecem:** Aumenta a janela temporal (canto superior direito, ex: `Last 24 hours`).
-
-## Verificação direta no InfluxDB
-
-Para consultar diretamente a base de dados `harrydb` é `harryspace`:
-
-Opção 1 — CLI dentro do container influxdb:
-```powershell
-docker compose exec influxdb influx -database harryspace -execute "SHOW MEASUREMENTS"
-docker compose exec influxdb influx -database harryspace -execute "SELECT * FROM temperature ORDER BY time DESC LIMIT 10"
-```
-
-Opção 2 — HTTP API (curl / Postman):
 ```bash
-curl -G 'http://localhost:8086/query?db=harryspace' --data-urlencode 'q=SHOW MEASUREMENTS'
-curl -G 'http://localhost:8086/query?db=harryspace' --data-urlencode 'q=SELECT last(value), location FROM temperature GROUP BY location'
+pip install -r requirements.txt
 ```
 
-Medições esperadas (se todos os publicadores estiverem a funcionar):
-- `temperature` — DHT22
-- `humidity` — DHT22
-- `voltage` — Potenciômetro ESP32
-- `presence` — PIR ESP32
-- `ping` — ping_monitor.py
+### 3. Run Services
 
-## Troubleshooting rápido
+```bash
+# Bridge (requires MQTT and InfluxDB running)
+python services/bridge/src/main.py
 
-### Docker não inicia
-```powershell
-docker ps
-```
-Se falhar, inicia o Docker Desktop e espera 1–2 minutos até o daemon ficar "running".
-
-### Containers não sobem
-```powershell
-docker compose config        # valida sintaxe do compose
-docker compose up -d --build # força rebuild das imagens bridge e ping-monitor
+# Ping Monitor
+python services/ping_monitor/src/main.py
 ```
 
-### Bridge não conecta ao Mosquitto / não conecta ao InfluxDB
-```powershell
-docker compose logs bridge --tail=50
-docker compose ps   # confere que mqtt e influxdb estão healthy
-```
-Os healthchecks garantem que bridge só arranca depois de MQTT e InfluxDB responderem. Se ainda assim falhar, verifica nomes DNS (MQTT_BROKER=`mqtt`, INFLUX_HOST=`influxdb`) — os containers Docker resolvem estes nomes automaticamente pela rede interna `iot-monitoring_default`.
+## Troubleshooting
 
-### Wokwi não conecta ao broker MQTT
-1. Confirmar IP do PC (ipconfig) e que é o mesmo em `MQTT_HOST` do wokwi.ino
-2. Confirmar que Mosquitto está a ouvir em `0.0.0.0:1883` (ver [mosquitto.conf](mosquitto.conf) linha 5 e `netstat -an | Select-String :1883`)
-3. Confirmar firewall do Windows com regra de entrada TCP 1883 permitida
-4. Testar conexão externamente com MQTT Explorer de outro dispositivo na mesma LAN
+See `docs/TROUBLESHOOTING.md` for:
+- Services won't start
+- MQTT connection issues
+- InfluxDB initialization
+- Grafana data display problems
+- Ping Monitor troubleshooting
 
-### Ping Monitor publica sempre -1 (unreachable)
-O container `ping-monitor` corre a partir da **rede Docker interna**. Se `SWITCH_IP` for um IP privado (ex: 192.168.x.x), o Docker precisa de ter rota para essa LAN. No Docker Desktop em Windows com WSL2 isto funciona por defeito com NAT; se não funcionar, troca `SWITCH_IP` para um IP público (ex: 8.8.8.8) apenas para testar.
+## Documentation
 
-### Grafana não vê a fonte / datasource "InfluxDB"
-Acede a http://localhost:3000 → Configuration → Data sources, confirma:
-- Nome = `InfluxDB`
-- URL = `http://influxdb:8086` (não localhost!)
-- Database = `harryspace`
-- User / Password = `user` / `password`
-- Carrega em "Save & test"
+- **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **MQTT Protocol:** [docs/MQTT_TOPICS.md](docs/MQTT_TOPICS.md)
+- **Setup Guide:** [docs/SETUP.md](docs/SETUP.md)
+- **Troubleshooting:** [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
-## Observações finais
+## Key Features
 
-Arquitetura completa solicitada:
-```
-Wokwi ESP32 (DHT22+PIR+Pot) → MQTT → Mosquitto :1883 → bridge.py → InfluxDB :8086 → Grafana :3000
-                                                              ↑
-                                                   ping_monitor.py (publica ping)
-```
+✅ **Modular Architecture** - Clear separation of concerns  
+✅ **Secure Configuration** - Environment-based secrets  
+✅ **Comprehensive Logging** - Structured logs per module  
+✅ **Error Handling** - Graceful reconnection logic  
+✅ **Testing** - Unit tests and coverage reporting  
+✅ **Professional Documentation** - Complete guides
 
-O Docker Desktop/daemon precisa estar sempre ativo para os 5 serviços (mqtt, influxdb, grafana, bridge, ping-monitor) funcionarem. Se só quiseres testar o bridge localmente (fora do Docker), desativa o serviço `bridge` do compose e corre `python bridge.py` — não te esqueças de ativar o venv e instalar o requirements.txt.
+## License
+
+[To be determined by project owner]
