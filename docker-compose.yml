@@ -120,34 +120,16 @@ services:
     environment:
       MQTT_BROKER: mqtt
       MQTT_PORT: "1883"
-      RABBITMQ_URL: "amqp://rabbitmq:5672"
-      RABBITMQ_QUEUE: "alert-events"
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_QUEUE: ${RABBITMQ_QUEUE:-alert-events}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mqtt:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     restart: unless-stopped
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: harryspace-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
 
 volumes:
   mosquitto_data:
   mosquitto_log:
   influxdb_data:
   grafana_data:
-  rabbitmq_data:
