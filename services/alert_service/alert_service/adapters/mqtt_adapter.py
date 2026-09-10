@@ -44,8 +44,9 @@ class MQTTAlertAdapter(AlertMQTTGateway):
         if rc == 0:
             logger.info("MQTT connection established")
             for topic in self._topics:
-                client.subscribe(topic, qos=0)
-                logger.info("Subscribed to %s", topic)
+                # QoS 1 for alert-critical topics (guaranteed delivery)
+                client.subscribe(topic, qos=1)
+                logger.info("Subscribed to %s (QoS 1)", topic)
         else:
             logger.warning("MQTT connection failed with rc=%s", rc)
 

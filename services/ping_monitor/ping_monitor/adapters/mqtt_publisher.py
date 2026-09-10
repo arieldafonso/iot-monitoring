@@ -23,7 +23,7 @@ class MQTTPingPublisher(PingPublisher):
         self.port = port
         self._username = username
         self._password = password
-        self._topic = f"harryspace/{location}/ping"
+        self._topic = f"unic/rooms/room-{location}/telemetry/ping"
         self._client = build_client()
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect

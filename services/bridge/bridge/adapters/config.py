@@ -38,7 +38,7 @@ def load_config() -> AppConfig:
             port=int(os.getenv("MQTT_PORT", "1883")),
             username=os.getenv("MQTT_USERNAME"),
             password=os.getenv("MQTT_PASSWORD"),
-            topic_pattern=os.getenv("MQTT_TOPIC_PATTERN", "harryspace/+/+"),
+            topic_pattern=os.getenv("MQTT_TOPIC_PATTERN", "unic/rooms/+/telemetry/+"),
         ),
         influxdb=InfluxDBConfig(
             host=os.getenv("INFLUX_HOST", "localhost"),

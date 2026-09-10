@@ -20,7 +20,7 @@ def use_case(mock_repository):
 
 class TestProcessTelemetry:
     def test_valid_temperature_message(self, use_case, mock_repository):
-        result = use_case.execute("harryspace/01/temperature", "24.5")
+        result = use_case.execute("unic/rooms/room-01/telemetry/temperature", "24.5")
         assert result is True
         mock_repository.save.assert_called_once()
 
@@ -30,20 +30,20 @@ class TestProcessTelemetry:
         mock_repository.save.assert_not_called()
 
     def test_invalid_measurement(self, use_case, mock_repository):
-        result = use_case.execute("harryspace/01/lux", "850")
+        result = use_case.execute("unic/rooms/room-01/telemetry/lux", "850")
         assert result is False
         mock_repository.save.assert_not_called()
 
     def test_non_numeric_payload(self, use_case, mock_repository):
-        result = use_case.execute("harryspace/01/temperature", "abc")
+        result = use_case.execute("unic/rooms/room-01/telemetry/temperature", "abc")
         assert result is False
         mock_repository.save.assert_not_called()
 
     def test_empty_payload(self, use_case, mock_repository):
-        result = use_case.execute("harryspace/01/temperature", "")
+        result = use_case.execute("unic/rooms/room-01/telemetry/temperature", "")
         assert result is False
 
     def test_repository_failure(self, use_case, mock_repository):
         mock_repository.save.return_value = False
-        result = use_case.execute("harryspace/01/temperature", "24.5")
+        result = use_case.execute("unic/rooms/room-01/telemetry/temperature", "24.5")
         assert result is False

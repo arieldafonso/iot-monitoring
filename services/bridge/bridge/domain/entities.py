@@ -17,8 +17,9 @@ class TelemetryMessage:
     def from_mqtt(
         cls, topic: str, payload: str, timestamp: Optional[datetime] = None
     ) -> "TelemetryMessage":
+        """Parse topic: unic/rooms/{room_id}/telemetry/{sensor}"""
         parts = topic.split("/")
-        if len(parts) != 3 or parts[0] != "harryspace":
+        if len(parts) != 5 or parts[0] != "unic" or parts[1] != "rooms" or parts[3] != "telemetry":
             raise ValueError(f"Invalid topic format: {topic}")
 
         try:
@@ -32,8 +33,8 @@ class TelemetryMessage:
             timestamp = datetime.utcnow()
 
         return cls(
-            location=parts[1],
-            measurement=parts[2],
+            location=parts[2],
+            measurement=parts[4],
             value=value,
             timestamp=timestamp,
         )

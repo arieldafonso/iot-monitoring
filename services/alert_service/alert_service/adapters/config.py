@@ -18,11 +18,11 @@ class AppConfig:
     room_id: str
     log_level: str
     topics: list[str] = field(default_factory=lambda: [
-        "harryspace/01/temperature",
-        "harryspace/01/humidity",
-        "harryspace/01/presence",
-        "harryspace/01/voltage",
-        "harryspace/01/ping",
+        "unic/rooms/room-01/telemetry/temperature",
+        "unic/rooms/room-01/telemetry/humidity",
+        "unic/rooms/room-01/telemetry/presence",
+        "unic/rooms/room-01/telemetry/voltage",
+        "unic/rooms/room-01/telemetry/ping",
     ])
     thresholds: AlertThresholds = field(default_factory=AlertThresholds)
 

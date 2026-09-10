@@ -116,10 +116,10 @@ void reconnectMQTT() {
       Serial.println();
       Serial.println("MQTT connected");
 
-      if (client.subscribe("harryspace/01/+")) {
+      if (client.subscribe("unic/rooms/room-01/telemetry/+")) {
 
         Serial.println("MQTT subscription OK");
-        Serial.println("Subscribed: harryspace/01/+");
+        Serial.println("Subscribed: unic/rooms/room-01/telemetry/+");
 
       } else {
 
@@ -262,7 +262,7 @@ void loop() {
     Serial.println(" °C");
 
     publishReading(
-      "harryspace/01/temperature",
+      "unic/rooms/room-01/telemetry/temperature",
       temperature
     );
 
@@ -282,7 +282,7 @@ void loop() {
     Serial.println(" %");
 
     publishReading(
-      "harryspace/01/humidity",
+      "unic/rooms/room-01/telemetry/humidity",
       humidity
     );
 
@@ -307,7 +307,7 @@ void loop() {
   }
 
   publishReading(
-    "harryspace/01/presence",
+    "unic/rooms/room-01/telemetry/presence",
     pirState
   );
 
@@ -323,7 +323,7 @@ void loop() {
   Serial.println(" V");
 
   publishReading(
-    "harryspace/01/voltage",
+    "unic/rooms/room-01/telemetry/voltage",
     voltage
   );
 

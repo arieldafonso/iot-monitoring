@@ -6,16 +6,19 @@ from bridge.domain.validators import validate_topic, validate_measurement, valid
 
 class TestValidateTopic:
     def test_valid_topic(self):
-        assert validate_topic("harryspace/01/temperature") is True
+        assert validate_topic("unic/rooms/room-01/telemetry/temperature") is True
 
     def test_invalid_prefix(self):
-        assert validate_topic("invalid/01/temperature") is False
+        assert validate_topic("invalid/rooms/room-01/telemetry/temperature") is False
 
     def test_too_few_parts(self):
-        assert validate_topic("harryspace/01") is False
+        assert validate_topic("unic/rooms/room-01") is False
 
     def test_too_many_parts(self):
-        assert validate_topic("harryspace/01/temperature/extra") is False
+        assert validate_topic("unic/rooms/room-01/telemetry/temperature/extra") is False
+
+    def test_missing_telemetry_level(self):
+        assert validate_topic("unic/rooms/room-01/data/temperature") is False
 
 
 class TestValidateMeasurement:
