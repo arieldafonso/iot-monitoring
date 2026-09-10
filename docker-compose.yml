@@ -122,6 +122,24 @@ services:
       MQTT_PORT: "1883"
       RABBITMQ_URL: ${RABBITMQ_URL}
       RABBITMQ_QUEUE: ${RABBITMQ_QUEUE:-alert-events}
+      THRESHOLD_TEMPERATURE: ${THRESHOLD_TEMPERATURE:-30.0}
+      HYSTERESIS_CYCLES: ${HYSTERESIS_CYCLES:-3}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    restart: unless-stopped
+
+  heartbeat-monitor:
+    build:
+      context: .
+      dockerfile: services/heartbeat_monitor/Dockerfile
+    container_name: harryspace-heartbeat
+    environment:
+      MQTT_BROKER: mqtt
+      MQTT_PORT: "1883"
+      HEARTBEAT_TIMEOUT: "180"
+      HEARTBEAT_CHECK_INTERVAL: "30"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mqtt:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 _root = Path(__file__).resolve().parent
 
-for service in ("bridge", "ping_monitor", "alert_service"):
+for service in ("bridge", "ping_monitor", "alert_service", "heartbeat_monitor"):
     pkg = _root / "services" / service / service
     if pkg.is_dir():
         sys.path.insert(0, str(_root / "services" / service))

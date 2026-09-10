@@ -23,6 +23,7 @@ class AppConfig:
         "unic/rooms/room-01/telemetry/presence",
         "unic/rooms/room-01/telemetry/voltage",
         "unic/rooms/room-01/telemetry/ping",
+        "unic/rooms/room-01/telemetry/smoke",
     ])
     thresholds: AlertThresholds = field(default_factory=AlertThresholds)
 
@@ -38,10 +39,12 @@ def load_config() -> AppConfig:
         room_id=os.getenv("LOCATION", "01"),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         thresholds=AlertThresholds(
-            temperature=float(os.getenv("THRESHOLD_TEMPERATURE", "35.0")),
+            temperature=float(os.getenv("THRESHOLD_TEMPERATURE", "30.0")),
             humidity=float(os.getenv("THRESHOLD_HUMIDITY", "80.0")),
             voltage_high=float(os.getenv("THRESHOLD_VOLTAGE_HIGH", "4.0")),
             voltage_low=float(os.getenv("THRESHOLD_VOLTAGE_LOW", "3.0")),
             ping=float(os.getenv("THRESHOLD_PING", "500.0")),
+            smoke=float(os.getenv("THRESHOLD_SMOKE", "1.0")),
+            hysteresis_cycles=int(os.getenv("HYSTERESIS_CYCLES", "3")),
         ),
     )

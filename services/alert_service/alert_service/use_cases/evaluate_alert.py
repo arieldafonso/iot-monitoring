@@ -1,4 +1,4 @@
-"""Use case for evaluating sensor alerts with state tracking."""
+"""Use case for evaluating sensor alerts with hysteresis state tracking."""
 
 import logging
 from typing import Dict, Optional
@@ -16,11 +16,13 @@ class EvaluateAlert:
         self._room_id = room_id
         self._publisher = publisher
         self._states: Dict[str, int] = {}
+        self._counters: Dict[str, int] = {}
 
     def execute(self, sensor: str, value: float) -> Optional[AlertEvent]:
         evaluators = {
-            "temperature": self._eval_temperature,
-            "humidity": self._eval_humidity,
+            "temperature": self._eval_with_hysteresis,
+            "humidity": self._eval_with_hysteresis,
+            "smoke": self._eval_smoke,
             "voltage": self._eval_voltage,
             "ping": self._eval_ping,
             "presence": self._eval_presence,
@@ -30,7 +32,7 @@ class EvaluateAlert:
         if evaluator is None:
             return None
 
-        event = evaluator(value)
+        event = evaluator(sensor, value)
         if event is not None:
             try:
                 self._publisher.publish(event)
@@ -45,6 +47,12 @@ class EvaluateAlert:
     def _set_state(self, sensor: str, state: int) -> None:
         self._states[sensor] = state
 
+    def _get_counter(self, sensor: str) -> int:
+        return self._counters.get(sensor, 0)
+
+    def _set_counter(self, sensor: str, count: int) -> None:
+        self._counters[sensor] = count
+
     def _fire_alert(self, sensor: str, event_name: str, value: float, threshold: float = None) -> AlertEvent:
         return AlertEvent.create(
             event_name=event_name,
@@ -54,37 +62,49 @@ class EvaluateAlert:
             room_id=self._room_id,
         )
 
-    def _eval_temperature(self, value: float) -> Optional[AlertEvent]:
-        threshold = self._thresholds.temperature
+    def _eval_with_hysteresis(self, sensor: str, value: float) -> Optional[AlertEvent]:
+        """Evaluate temperature or humidity with temporal hysteresis.
+        Requires N consecutive cycles above threshold before firing."""
+        threshold = getattr(self._thresholds, sensor)
+        cycles = self._thresholds.hysteresis_cycles
+
         if value > threshold:
-            if self._get_state("temperature") != 1:
-                self._set_state("temperature", 1)
-                logger.warning("Temperature exceeded threshold: %s > %s", value, threshold)
-                return self._fire_alert("temperature", "temperature.threshold.exceeded", value, threshold)
+            counter = self._get_counter(sensor) + 1
+            self._set_counter(sensor, counter)
+
+            if counter >= cycles and self._get_state(sensor) != 1:
+                self._set_state(sensor, 1)
+                self._set_counter(sensor, 0)
+                logger.warning("%s exceeded threshold after %s cycles: %s > %s", sensor, cycles, value, threshold)
+                return self._fire_alert(sensor, f"{sensor}.threshold.exceeded", value, threshold)
+            elif counter < cycles:
+                logger.debug("%s above threshold (%s/%s cycles): %s > %s", sensor, counter, cycles, value, threshold)
             return None
 
-        if self._get_state("temperature") != 0:
-            self._set_state("temperature", 0)
-            logger.info("Temperature recovered: %s <= %s", value, threshold)
-            return self._fire_alert("temperature", "temperature.threshold.resolved", value, threshold)
+        self._set_counter(sensor, 0)
+
+        if self._get_state(sensor) != 0:
+            self._set_state(sensor, 0)
+            logger.info("%s recovered: %s <= %s", sensor, value, threshold)
+            return self._fire_alert(sensor, f"{sensor}.threshold.resolved", value, threshold)
         return None
 
-    def _eval_humidity(self, value: float) -> Optional[AlertEvent]:
-        threshold = self._thresholds.humidity
-        if value > threshold:
-            if self._get_state("humidity") != 1:
-                self._set_state("humidity", 1)
-                logger.warning("Humidity exceeded threshold: %s > %s", value, threshold)
-                return self._fire_alert("humidity", "humidity.threshold.exceeded", value, threshold)
+    def _eval_smoke(self, sensor: str, value: float) -> Optional[AlertEvent]:
+        """Smoke detection is immediate (no hysteresis) — critical safety."""
+        if value >= self._thresholds.smoke:
+            if self._get_state("smoke") != 1:
+                self._set_state("smoke", 1)
+                logger.critical("SMOKE DETECTED: value=%s", value)
+                return self._fire_alert("smoke", "smoke.detected", value, self._thresholds.smoke)
             return None
 
-        if self._get_state("humidity") != 0:
-            self._set_state("humidity", 0)
-            logger.info("Humidity recovered: %s <= %s", value, threshold)
-            return self._fire_alert("humidity", "humidity.threshold.resolved", value, threshold)
+        if self._get_state("smoke") != 0:
+            self._set_state("smoke", 0)
+            logger.info("Smoke cleared: value=%s", value)
+            return self._fire_alert("smoke", "smoke.cleared", value)
         return None
 
-    def _eval_voltage(self, value: float) -> Optional[AlertEvent]:
+    def _eval_voltage(self, sensor: str, value: float) -> Optional[AlertEvent]:
         high = self._thresholds.voltage_high
         low = self._thresholds.voltage_low
 
@@ -108,7 +128,7 @@ class EvaluateAlert:
             return self._fire_alert("voltage", "voltage.threshold.resolved", value)
         return None
 
-    def _eval_ping(self, value: float) -> Optional[AlertEvent]:
+    def _eval_ping(self, sensor: str, value: float) -> Optional[AlertEvent]:
         threshold = self._thresholds.ping
         if value > threshold:
             if self._get_state("ping") != 1:
@@ -123,7 +143,7 @@ class EvaluateAlert:
             return self._fire_alert("ping", "ping.threshold.resolved", value, threshold)
         return None
 
-    def _eval_presence(self, value: float) -> Optional[AlertEvent]:
+    def _eval_presence(self, sensor: str, value: float) -> Optional[AlertEvent]:
         state = int(value)
         if state == 1:
             if self._get_state("presence") != 1:

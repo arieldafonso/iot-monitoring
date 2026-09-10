@@ -24,6 +24,13 @@
       "top": 190.7,
       "left": 278.2,
       "attrs": { "value": "50" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "smoke",
+      "top": -100,
+      "left": -50,
+      "attrs": { "value": "0" }
     }
   ],
   "connections": [
@@ -35,7 +42,10 @@
     [ "esp32:27", "pir:OUT", "yellow", [] ],
     [ "esp32:3V3", "pot:VCC", "red", [] ],
     [ "esp32:GND", "pot:GND", "black", [] ],
-    [ "esp32:34", "pot:SIG", "blue", [] ]
+    [ "esp32:34", "pot:SIG", "blue", [] ],
+    [ "esp32:3V3", "smoke:VCC", "red", [] ],
+    [ "esp32:GND", "smoke:GND", "black", [] ],
+    [ "esp32:26", "smoke:SIG", "orange", [] ]
   ],
   "dependencies": {}
 }

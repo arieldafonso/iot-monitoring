@@ -7,6 +7,7 @@
 
 #define PIR_PIN 27
 #define POT_PIN 34
+#define SMOKE_PIN 26  // Sensor de fumo (digital)
 
 // Wokwi Private IoT Gateway
 #ifndef MQTT_HOST
@@ -20,9 +21,34 @@
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
 
+const char* ROOM_ID = "room-01";
+const char* TOPIC_PREFIX = "unic/rooms/room-01/telemetry/";
+const char* TOPIC_HEARTBEAT = "unic/rooms/room-01/heartbeat";
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
+
+unsigned long lastHeartbeat = 0;
+const unsigned long HEARTBEAT_INTERVAL = 60000; // 60 segundos
+
+// =====================================================
+// CRC simples (MD5-based, 4 hex chars)
+// =====================================================
+
+unsigned long hashDjb2(const char* str) {
+  unsigned long hash = 5381;
+  int c;
+  while ((c = *str++)) {
+    hash = ((hash << 5) + hash) + c;
+  }
+  return hash;
+}
+
+void getCRC(const char* valueStr, char* crcOut) {
+  unsigned long h = hashDjb2(valueStr);
+  sprintf(crcOut, "%04lx", h & 0xFFFF);
+}
 
 // =====================================================
 // CALLBACK MQTT
@@ -111,7 +137,7 @@ void reconnectMQTT() {
 
     Serial.print("Connecting MQTT...");
 
-    if (client.connect("esp32-harryspace")) {
+    if (client.connect("esp32-unic-room01")) {
 
       Serial.println();
       Serial.println("MQTT connected");
@@ -143,17 +169,23 @@ void reconnectMQTT() {
 }
 
 // =====================================================
-// PUBLICAR DADOS MQTT
+// PUBLICAR DADOS MQTT (JSON + CRC)
 // =====================================================
 
 void publishReading(const char* topic, float value) {
 
-  char payload[32];
+  char valueStr[16];
+  dtostrf(value, 1, 2, valueStr);
 
-  dtostrf(value, 1, 2, payload);
+  char crc[5];
+  getCRC(valueStr, crc);
+
+  // JSON payload: {"value":24.50,"crc":"a3f2"}
+  char payload[64];
+  sprintf(payload, "{\"value\":%s,\"crc\":\"%s\"}", valueStr, crc);
 
   Serial.println();
-  Serial.println("------------- MQTT PUBLISH -------------");
+  Serial.println("------------- MQTT PUBLISH (JSON) -------------");
 
   Serial.print("Topic: ");
   Serial.println(topic);
@@ -172,7 +204,33 @@ void publishReading(const char* topic, float value) {
     Serial.println("Status: ERRO AO PUBLICAR");
   }
 
-  Serial.println("----------------------------------------");
+  Serial.println("-----------------------------------------------");
+}
+
+// =====================================================
+// PUBLICAR HEARTBEAT
+// =====================================================
+
+void publishHeartbeat() {
+
+  char payload[64];
+  sprintf(payload, "{\"heartbeat\":true,\"room\":\"%s\"}", ROOM_ID);
+
+  Serial.println();
+  Serial.println("------------- HEARTBEAT -------------");
+
+  Serial.print("Topic: ");
+  Serial.println(TOPIC_HEARTBEAT);
+
+  bool result = client.publish(TOPIC_HEARTBEAT, payload);
+
+  if (result) {
+    Serial.println("Status: HEARTBEAT ENVIADO");
+  } else {
+    Serial.println("Status: ERRO NO HEARTBEAT");
+  }
+
+  Serial.println("-------------------------------------");
 }
 
 // =====================================================
@@ -198,12 +256,17 @@ void setup() {
   // PIR como entrada digital
   pinMode(PIR_PIN, INPUT);
 
+  // Sensor de fumo como entrada digital
+  pinMode(SMOKE_PIN, INPUT_PULLDOWN);
+
   // Configuração MQTT
   client.setServer(MQTT_HOST, MQTT_PORT);
   client.setCallback(mqttCallback);
 
   // Conecta WiFi
   connectWiFi();
+
+  lastHeartbeat = millis();
 }
 
 // =====================================================
@@ -229,6 +292,18 @@ void loop() {
   client.loop();
 
   // ===================================================
+  // HEARTBEAT (a cada 60 segundos)
+  // ===================================================
+
+  unsigned long now = millis();
+
+  if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+
+    publishHeartbeat();
+    lastHeartbeat = now;
+  }
+
+  // ===================================================
   // LEITURA DOS SENSORES
   // ===================================================
 
@@ -241,6 +316,9 @@ void loop() {
 
   // PIR
   int pirState = digitalRead(PIR_PIN);
+
+  // FUMO
+  int smokeState = digitalRead(SMOKE_PIN);
 
   // ===================================================
   // CONSOLE
@@ -309,6 +387,26 @@ void loop() {
   publishReading(
     "unic/rooms/room-01/telemetry/presence",
     pirState
+  );
+
+  // ===================================================
+  // FUMO
+  // ===================================================
+
+  Serial.print("Fumo: ");
+
+  if (smokeState == HIGH) {
+
+    Serial.println("DETECTADO");
+
+  } else {
+
+    Serial.println("NÃO DETECTADO");
+  }
+
+  publishReading(
+    "unic/rooms/room-01/telemetry/smoke",
+    smokeState
   );
 
   // ===================================================

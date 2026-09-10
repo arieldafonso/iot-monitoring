@@ -11,6 +11,7 @@ VALID_MEASUREMENTS = frozenset({
     "voltage",
     "presence",
     "ping",
+    "smoke",
 })
 
 TOPIC_PREFIX = "unic"
