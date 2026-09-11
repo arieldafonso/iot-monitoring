@@ -37,6 +37,13 @@ class BridgeMQTTHandler(MQTTGateway):
 
     def subscribe(self, topic_pattern: str) -> None:
         self._topic_pattern = topic_pattern
+        # If already connected, subscribe immediately
+        if self._client.is_connected():
+            result = self._client.subscribe(topic_pattern)
+            if result[0] == mqtt.MQTT_ERR_SUCCESS:
+                logger.info("Subscribed to topic: %s", topic_pattern)
+            else:
+                logger.error("Failed to subscribe to %s", topic_pattern)
 
     def disconnect(self) -> None:
         try:

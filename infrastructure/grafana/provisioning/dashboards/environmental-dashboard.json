@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -109,7 +109,7 @@
           "alias": "temperatura",
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT mean(\"value\") FROM \"temperature\" WHERE (\"location\" = '$location') AND $timeFilter GROUP BY time($__interval) fill(null)",
           "rawQuery": true,
@@ -123,7 +123,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -204,7 +204,7 @@
           "alias": "humidade",
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT mean(\"value\") FROM \"humidity\" WHERE (\"location\" = '$location') AND $timeFilter GROUP BY time($__interval) fill(null)",
           "rawQuery": true,
@@ -218,7 +218,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -314,7 +314,7 @@
           "alias": "presença",
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"presence\" WHERE (\"location\" = '$location') AND $timeFilter GROUP BY time($__interval) fill(previous)",
           "rawQuery": true,
@@ -328,7 +328,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -413,7 +413,7 @@
           "alias": "tensão",
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT mean(\"value\") FROM \"voltage\" WHERE (\"location\" = '$location') AND $timeFilter GROUP BY time($__interval) fill(null)",
           "rawQuery": true,
@@ -427,7 +427,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -512,7 +512,7 @@
           "alias": "ping switch",
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT mean(\"value\") FROM \"ping\" WHERE (\"location\" = '$location') AND $timeFilter GROUP BY time($__interval) fill(null)",
           "rawQuery": true,
@@ -526,7 +526,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -580,7 +580,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"temperature\" WHERE (\"location\" = '$location') AND $timeFilter",
           "rawQuery": true,
@@ -594,7 +594,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -644,7 +644,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"humidity\" WHERE (\"location\" = '$location') AND $timeFilter",
           "rawQuery": true,
@@ -658,7 +658,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -721,7 +721,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"presence\" WHERE (\"location\" = '$location') AND $timeFilter",
           "rawQuery": true,
@@ -735,7 +735,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -789,7 +789,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"voltage\" WHERE (\"location\" = '$location') AND $timeFilter",
           "rawQuery": true,
@@ -803,7 +803,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "efw9thfbtn4lce"
+        "uid": "P951FEA4DE68E13C5"
       },
       "fieldConfig": {
         "defaults": {
@@ -857,7 +857,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "efw9thfbtn4lce"
+            "uid": "P951FEA4DE68E13C5"
           },
           "query": "SELECT last(\"value\") FROM \"ping\" WHERE (\"location\" = '$location') AND $timeFilter",
           "rawQuery": true,

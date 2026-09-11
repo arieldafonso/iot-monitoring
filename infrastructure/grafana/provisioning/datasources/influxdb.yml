@@ -12,3 +12,4 @@ datasources:
     editable: true
     jsonData:
       timeInterval: "5s"
+      defaultRP: "ninety_days"

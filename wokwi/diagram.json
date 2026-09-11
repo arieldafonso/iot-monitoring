@@ -17,7 +17,13 @@
       "left": 200,
       "attrs": { "temperature": "25.0", "humidity": "55.0" }
     },
-    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": 52, "left": 203.82, "attrs": {} },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "top": 52,
+      "left": 203.82,
+      "attrs": {}
+    },
     {
       "type": "wokwi-potentiometer",
       "id": "pot",
@@ -26,11 +32,11 @@
       "attrs": { "value": "50" }
     },
     {
-      "type": "wokwi-slide-switch",
+      "type": "wokwi-gas-sensor",
       "id": "smoke",
       "top": -100,
-      "left": -50,
-      "attrs": { "value": "0" }
+      "left": -100,
+      "attrs": { "ppm": "300", "threshold": "3.0" }
     }
   ],
   "connections": [
@@ -45,7 +51,7 @@
     [ "esp32:34", "pot:SIG", "blue", [] ],
     [ "esp32:3V3", "smoke:VCC", "red", [] ],
     [ "esp32:GND", "smoke:GND", "black", [] ],
-    [ "esp32:26", "smoke:SIG", "orange", [] ]
+    [ "esp32:26", "smoke:DO", "orange", [] ]
   ],
   "dependencies": {}
 }

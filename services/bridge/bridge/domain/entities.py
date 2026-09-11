@@ -1,7 +1,6 @@
 """Domain entities for the Bridge service."""
 
 import json
-import hashlib
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -60,8 +59,9 @@ def _parse_payload(payload: str, topic: str) -> float:
         value = float(data["value"])
 
         if "crc" in data:
-            content = f"{value}".encode()
-            expected_crc = hashlib.md5(content).hexdigest()[:4]
+            # DJB2 hash matching firmware implementation + dtostrf 2 decimal places
+            value_str = f"{value:.2f}"
+            expected_crc = _djb2_crc(value_str)
             if data["crc"] != expected_crc:
                 raise ValueError(
                     f"CRC mismatch for {topic}: expected={expected_crc}, got={data['crc']}"
@@ -75,3 +75,11 @@ def _parse_payload(payload: str, topic: str) -> float:
         raise ValueError(
             f"Payload is not numeric: {payload} (topic: {topic})"
         )
+
+
+def _djb2_crc(value_str: str) -> str:
+    """DJB2 hash matching ESP32 firmware implementation."""
+    h = 5381
+    for ch in value_str:
+        h = ((h << 5) + h + ord(ch)) & 0xFFFFFFFF
+    return f"{h & 0xFFFF:04x}"

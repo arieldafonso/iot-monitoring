@@ -256,8 +256,8 @@ void setup() {
   // PIR como entrada digital
   pinMode(PIR_PIN, INPUT);
 
-  // Sensor de fumo como entrada digital
-  pinMode(SMOKE_PIN, INPUT_PULLDOWN);
+  // Sensor de fumo (MQ-2 DO — LOW when gas detected)
+  pinMode(SMOKE_PIN, INPUT_PULLUP);
 
   // Configuração MQTT
   client.setServer(MQTT_HOST, MQTT_PORT);
@@ -317,8 +317,9 @@ void loop() {
   // PIR
   int pirState = digitalRead(PIR_PIN);
 
-  // FUMO
-  int smokeState = digitalRead(SMOKE_PIN);
+  // FUMO (MQ-2 DO: LOW = gas detected, HIGH = normal)
+  int smokeRaw = digitalRead(SMOKE_PIN);
+  int smokeState = (smokeRaw == LOW) ? 1 : 0;  // Invert: LOW = smoke detected
 
   // ===================================================
   // CONSOLE
