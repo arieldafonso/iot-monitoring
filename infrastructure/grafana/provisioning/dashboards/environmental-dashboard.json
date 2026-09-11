@@ -877,7 +877,7 @@
       {
         "hide": 2,
         "name": "location",
-        "query": "01",
+        "query": "room-01",
         "skipUrlSync": false,
         "type": "constant"
       }
