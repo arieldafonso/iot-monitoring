@@ -9,6 +9,8 @@ services:
       - ./infrastructure/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
+    networks:
+      - unic_internal_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/#", "-C", "1"]
@@ -30,6 +32,9 @@ services:
       INFLUXDB_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
     volumes:
       - influxdb_data:/var/lib/influxdb
+      - ./infrastructure/influxdb/init-retention.sh:/docker-entrypoint-initdb.d/init-retention.sh:ro
+    networks:
+      - unic_internal_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8086/ping || exit 1"]
@@ -60,6 +65,8 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - unic_internal_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
@@ -91,6 +98,8 @@ services:
         condition: service_healthy
       influxdb:
         condition: service_healthy
+    networks:
+      - unic_internal_net
     restart: unless-stopped
 
   ping-monitor:
@@ -110,6 +119,8 @@ services:
     depends_on:
       mqtt:
         condition: service_healthy
+    networks:
+      - unic_internal_net
     restart: unless-stopped
 
   alert-service:
@@ -123,11 +134,14 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL}
       RABBITMQ_QUEUE: ${RABBITMQ_QUEUE:-alert-events}
       THRESHOLD_TEMPERATURE: ${THRESHOLD_TEMPERATURE:-30.0}
-      HYSTERESIS_CYCLES: ${HYSTERESIS_CYCLES:-3}
+      HYSTERESIS_CYCLES: ${HYSTERESIS_CYCLES:-2}
+      HYSTERESIS_RECOVERY_SECONDS: ${HYSTERESIS_RECOVERY_SECONDS:-180}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mqtt:
         condition: service_healthy
+    networks:
+      - unic_internal_net
     restart: unless-stopped
 
   heartbeat-monitor:
@@ -144,7 +158,14 @@ services:
     depends_on:
       mqtt:
         condition: service_healthy
+    networks:
+      - unic_internal_net
     restart: unless-stopped
+
+networks:
+  unic_internal_net:
+    name: unic_internal_net
+    driver: bridge
 
 volumes:
   mosquitto_data:

@@ -1,6 +1,7 @@
 """Use case for evaluating sensor alerts with hysteresis state tracking."""
 
 import logging
+import time
 from typing import Dict, Optional
 
 from ..domain.entities import AlertEvent
@@ -8,6 +9,8 @@ from ..domain.rules import AlertThresholds
 from ..ports.alert_publisher import AlertPublisher
 
 logger = logging.getLogger(__name__)
+
+RECOVERY_MARGIN = 5.0  # Recovery threshold = alert threshold - margin (ex: 30 - 5 = 25°C)
 
 
 class EvaluateAlert:
@@ -17,6 +20,7 @@ class EvaluateAlert:
         self._publisher = publisher
         self._states: Dict[str, int] = {}
         self._counters: Dict[str, int] = {}
+        self._recovery_start: Dict[str, float] = {}
 
     def execute(self, sensor: str, value: float) -> Optional[AlertEvent]:
         evaluators = {
@@ -64,11 +68,16 @@ class EvaluateAlert:
 
     def _eval_with_hysteresis(self, sensor: str, value: float) -> Optional[AlertEvent]:
         """Evaluate temperature or humidity with temporal hysteresis.
-        Requires N consecutive cycles above threshold before firing."""
+        TFC: N consecutive cycles above threshold before firing.
+        Recovery: value must stay below (threshold - margin) for recovery_seconds."""
         threshold = getattr(self._thresholds, sensor)
+        recovery_threshold = threshold - RECOVERY_MARGIN
         cycles = self._thresholds.hysteresis_cycles
+        recovery_time = self._thresholds.recovery_seconds
 
+        # --- ALERT: value above threshold ---
         if value > threshold:
+            self._recovery_start.pop(sensor, None)
             counter = self._get_counter(sensor) + 1
             self._set_counter(sensor, counter)
 
@@ -81,12 +90,36 @@ class EvaluateAlert:
                 logger.debug("%s above threshold (%s/%s cycles): %s > %s", sensor, counter, cycles, value, threshold)
             return None
 
+        # --- RESET counter if below threshold ---
         self._set_counter(sensor, 0)
 
-        if self._get_state(sensor) != 0:
-            self._set_state(sensor, 0)
-            logger.info("%s recovered: %s <= %s", sensor, value, threshold)
-            return self._fire_alert(sensor, f"{sensor}.threshold.resolved", value, threshold)
+        # --- RECOVERY: value below recovery threshold for N seconds ---
+        if self._get_state(sensor) == 1:
+            if value <= recovery_threshold:
+                # Start or continue recovery timer
+                if sensor not in self._recovery_start:
+                    self._recovery_start[sensor] = time.monotonic()
+                    logger.debug("%s below recovery threshold (%s <= %s), starting %ss timer",
+                                 sensor, value, recovery_threshold, recovery_time)
+                    return None
+
+                elapsed = time.monotonic() - self._recovery_start[sensor]
+                if elapsed >= recovery_time:
+                    self._set_state(sensor, 0)
+                    self._recovery_start.pop(sensor, None)
+                    logger.info("%s recovered after %ss: %s <= %s", sensor, int(elapsed), value, recovery_threshold)
+                    return self._fire_alert(sensor, f"{sensor}.threshold.resolved", value, threshold)
+
+                logger.debug("%s recovery in progress: %s/%ss", sensor, int(elapsed), recovery_time)
+                return None
+            else:
+                # Value rose above recovery threshold — reset recovery timer
+                if sensor in self._recovery_start:
+                    logger.debug("%s rose above recovery threshold (%s > %s), resetting timer",
+                                 sensor, value, recovery_threshold)
+                    self._recovery_start.pop(sensor, None)
+                return None
+
         return None
 
     def _eval_smoke(self, sensor: str, value: float) -> Optional[AlertEvent]:

@@ -45,6 +45,7 @@ def load_config() -> AppConfig:
             voltage_low=float(os.getenv("THRESHOLD_VOLTAGE_LOW", "3.0")),
             ping=float(os.getenv("THRESHOLD_PING", "500.0")),
             smoke=float(os.getenv("THRESHOLD_SMOKE", "1.0")),
-            hysteresis_cycles=int(os.getenv("HYSTERESIS_CYCLES", "3")),
+            hysteresis_cycles=int(os.getenv("HYSTERESIS_CYCLES", "2")),
+            recovery_seconds=int(os.getenv("HYSTERESIS_RECOVERY_SECONDS", "180")),
         ),
     )

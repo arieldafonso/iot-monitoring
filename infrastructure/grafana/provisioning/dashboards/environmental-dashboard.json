@@ -72,8 +72,12 @@
                 "value": null
               },
               {
+                "color": "orange",
+                "value": 25
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 30
               }
             ]
           },
@@ -368,12 +372,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
+                "color": "green",
+                "value": 3.0
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 4.0
               }
             ]
           },
@@ -467,8 +475,12 @@
                 "value": null
               },
               {
+                "color": "orange",
+                "value": 200
+              },
+              {
                 "color": "red",
-                "value": 100
+                "value": 500
               }
             ]
           },
@@ -527,8 +539,12 @@
                 "value": null
               },
               {
+                "color": "orange",
+                "value": 25
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 30
               }
             ]
           },
@@ -544,7 +560,7 @@
       },
       "id": 5,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -608,7 +624,7 @@
       },
       "id": 6,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -685,7 +701,7 @@
       },
       "id": 7,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -728,12 +744,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
+                "color": "green",
+                "value": 3.0
+              },
+              {
                 "color": "red",
-                "value": 80
+                "value": 4.0
               }
             ]
           },
@@ -749,7 +769,7 @@
       },
       "id": 8,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -796,8 +816,12 @@
                 "value": null
               },
               {
+                "color": "orange",
+                "value": 200
+              },
+              {
                 "color": "red",
-                "value": 100
+                "value": 500
               }
             ]
           },
@@ -813,7 +837,7 @@
       },
       "id": 10,
       "options": {
-        "colorMode": "value",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
