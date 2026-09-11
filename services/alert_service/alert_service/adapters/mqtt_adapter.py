@@ -58,10 +58,27 @@ class MQTTAlertAdapter(AlertMQTTGateway):
         payload = msg.payload.decode("utf-8", errors="replace").strip()
         logger.debug("Received topic=%s payload=%s", topic, payload)
 
-        try:
-            value = float(payload)
-        except ValueError:
-            logger.warning("Ignoring non-numeric payload for %s: %s", topic, payload)
+        value = self._parse_value(payload, topic)
+        if value is None:
             return
 
         self._on_sensor_value(topic, value)
+
+    @staticmethod
+    def _parse_value(payload: str, topic: str) -> Optional[float]:
+        import json as _json
+        payload = payload.strip()
+
+        if payload.startswith("{"):
+            try:
+                data = _json.loads(payload)
+                return float(data.get("value", 0))
+            except (ValueError, KeyError, TypeError) as exc:
+                logger.warning("Ignoring invalid JSON for %s: %s (%s)", topic, payload, exc)
+                return None
+
+        try:
+            return float(payload)
+        except ValueError:
+            logger.warning("Ignoring non-numeric payload for %s: %s", topic, payload)
+            return None
